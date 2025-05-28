@@ -5,12 +5,26 @@ import base64
 # --- Настройки страницы ---
 st.set_page_config(page_title="🎰 Мини Лото Казино", layout="centered")
 
-# --- Минимальный рабочий синий фон (1x1 пиксель) ---
-encoded_bg = "i.webp"
+# --- Вставленный фон (без файла) ---
+encoded_bg = "i.webp" # Здесь вставь свой полный base64 фон
 
+# --- Установка фонового изображения ---
+def set_background(encoded_img):
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/png;base64,{encoded_img = "i.webp"}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
-
-set_background(encoded_bg= "i.webp")
+set_background(encoded_bg)
 
 # --- Простой интерфейс игры ---
 st.title("🎰 Мини Лото Казино")
@@ -20,7 +34,7 @@ if "balance" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = []
 
-code = st.text_input("🔐 Введите код доступа>1234:", type="password")
+code = st.text_input("🔐 Введите код доступа", type="password")
 if code != "1234":
     st.warning("❌ Неверный код")
     st.stop()
