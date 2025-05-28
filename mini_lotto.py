@@ -1,46 +1,73 @@
-﻿import streamlit as st
+import streamlit as st
 import random
+import base64
 
-# --- Настройки ---
-ACCESS_CODE = "1234"  # Код доступа
+# --- Установка фона из локального файла ---
+def set_background(image_file):
+    with open(image_file, "rb") as img_file:
+        encoded = base64.b64encode(img_file.read()).decode()
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/png;base64,{encoded}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
-# --- Защита входа ---
-st.title("🎰 Мини-Лото — Генерация, Ставка и Выигрыш")
+set_background("casino_background.png")  # ← путь к локальному изображению
 
-code_input = st.text_input("🔐 Введите код доступа>1234:", type="password")
-if code_input != ACCESS_CODE:
-    st.warning("Введите правильный код для доступа.")
+# --- Streamlit Лото Казино ---
+st.set_page_config(page_title="🎰 Мини Лото Казино", layout="centered")
+
+st.title("🎰 Мини Лото Казино")
+
+if "balance" not in st.session_state:
+    st.session_state.balance = 1000
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+code = st.text_input("🔐 Введите код доступа", type="password")
+if code != "1234":
+    st.warning("❌ Неверный код")
     st.stop()
 
-st.success("✅ Доступ разрешён! Удачи в игре!")
+st.success("Добро пожаловать в казино мини-лото!")
+st.markdown(f"💳 **Баланс: {st.session_state.balance} ₸**")
 
-# --- Интерфейс игры ---
-st.header("💸 Сделайте ставку и выберите 5 чисел от 1 до 20")
-bet = st.number_input("💰 Ваша ставка:", min_value=1, step=1)
+st.subheader("📝 Сделайте ставку и выберите 5 чисел")
+bet = st.number_input("💰 Ваша ставка (₸):", min_value=10, max_value=500, step=10)
+numbers = st.multiselect("🔢 Выберите 5 уникальных чисел от 1 до 20:", list(range(1, 21)), max_selections=5)
 
-user_numbers = st.multiselect(
-    "🎯 Выберите 5 уникальных чисел:",
-    options=list(range(1, 21)),
-    max_selections=5
-)
-
-if st.button("🎲 Играть"):
-    if len(user_numbers) != 5:
-        st.error("❗ Пожалуйста, выберите ровно 5 чисел.")
+if st.button("🎲 Играть!"):
+    if st.session_state.balance < bet:
+        st.error("Недостаточно баланса!")
+    elif len(numbers) != 5:
+        st.warning("Пожалуйста, выберите ровно 5 чисел!")
     else:
-        winning_numbers = random.sample(range(1, 21), 5)
-        matches = set(user_numbers) & set(winning_numbers)
-        num_matches = len(matches)
+        draw = random.sample(range(1, 21), 5)
+        matches = len(set(numbers) & set(draw))
 
-        st.subheader("📍 Результаты:")
-        st.write("🎉 Выпавшие числа:", sorted(winning_numbers))
-        st.write("✅ Ваши совпадения:", sorted(matches) if matches else "Нет совпадений")
+        # Выигрыш по совпадениям
+        win_table = {5: 20, 4: 10, 3: 5}
+        multiplier = win_table.get(matches, 0)
+        win = bet * multiplier
 
-        # Расчёт выигрыша
-        multiplier = {3: 2, 4: 5, 5: 10}.get(num_matches, 0)
-        winnings = bet * multiplier
+        st.session_state.balance += win - bet
+        st.session_state.history.append((numbers, draw, matches, win - bet))
 
-        if winnings > 0:
-            st.success(f"🎉 Поздравляем! Совпадений: {num_matches}, Вы выиграли: {winnings}!")
-        else:
-            st.error("😢 К сожалению, вы проиграли. Попробуйте снова!")
+        st.markdown("## 🎉 Результаты:")
+        st.write(f"🎯 Ваши числа: {numbers}")
+        st.write(f"🎰 Выпавшие числа: {draw}")
+        st.success(f"🔗 Совпадений: {matches} — {'+' if win - bet >= 0 else ''}{win - bet} ₸")
+
+# История
+if st.session_state.history:
+    st.subheader("📜 История игр")
+    for i, (nums, res, match, change) in enumerate(reversed(st.session_state.history[-5:])):
+        st.markdown(f"**#{len(st.session_state.history)-i}** — 🎯 Числа: {nums}, 🎰 Выпали: {res}, ✅ Совпадения: {match}, 💸 Изменение: {'+' if change>=0 else ''}{change} ₸")
