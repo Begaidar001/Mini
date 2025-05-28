@@ -2,19 +2,15 @@ import streamlit as st
 import random
 import base64
 
-# --- Настройки страницы ---
-st.set_page_config(page_title="🎰 Мини Лото Казино", layout="centered")
-
-# --- Вставленный фон (без файла) ---
-encoded_bg = "i.webp" # Здесь вставь свой полный base64 фон
-
-# --- Установка фонового изображения ---
-def set_background(encoded_img):
+# --- Установка фона из локального файла ---
+def set_background(image_file):
+    with open(image_file, "rb") as img_file:
+        encoded = base64.b64encode(img_file.read()).decode()
     st.markdown(
         f"""
         <style>
         .stApp {{
-            background-image: url("data:image/png;base64,{encoded_img = "i.webp"}");
+            background-image: url("data:image/png;base64,{encoded}");
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -24,9 +20,11 @@ def set_background(encoded_img):
         unsafe_allow_html=True
     )
 
-set_background(encoded_bg)
+set_background("casino_background.png")  # ← путь к локальному изображению
 
-# --- Простой интерфейс игры ---
+# --- Streamlit Лото Казино ---
+st.set_page_config(page_title="🎰 Мини Лото Казино", layout="centered")
+
 st.title("🎰 Мини Лото Казино")
 
 if "balance" not in st.session_state:
@@ -55,7 +53,7 @@ if st.button("🎲 Играть!"):
         draw = random.sample(range(1, 21), 5)
         matches = len(set(numbers) & set(draw))
 
-        # Выплата по совпадениям
+        # Выигрыш по совпадениям
         win_table = {5: 20, 4: 10, 3: 5}
         multiplier = win_table.get(matches, 0)
         win = bet * multiplier
@@ -68,7 +66,7 @@ if st.button("🎲 Играть!"):
         st.write(f"🎰 Выпавшие числа: {draw}")
         st.success(f"🔗 Совпадений: {matches} — {'+' if win - bet >= 0 else ''}{win - bet} ₸")
 
-# История ставок
+# История
 if st.session_state.history:
     st.subheader("📜 История игр")
     for i, (nums, res, match, change) in enumerate(reversed(st.session_state.history[-5:])):
