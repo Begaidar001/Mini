@@ -1,76 +1,127 @@
 import streamlit as st
 import random
 
-# --- Настройки ---
-ACCESS_CODE = "1234"
-
 # --- Конфигурация страницы ---
-st.set_page_config(page_title="Мини Лото", page_icon="🎰", layout="centered")
+st.set_page_config(page_title="🎰 Мини Лото Казино", layout="centered")
 
-# --- Стилизация через CSS ---
+# --- Казино-стиль: фон и стили ---
 st.markdown("""
     <style>
-    .main { background-color: #f9f9f9; }
+    body {
+        background-image: url("https://images.unsplash.com/photo-1549924231-f129b911e442?auto=format&fit=crop&w=1500&q=80");
+        background-size: cover;
+    }
+    .main {
+        background-color: rgba(0, 0, 0, 0.75);
+        padding: 2rem;
+        border-radius: 15px;
+    }
+    h1, h2, h3, h4, h5, h6, p, div, label {
+        color: white !important;
+    }
     .stButton>button {
         background-color: #ff4b4b;
         color: white;
-        font-weight: bold;
-        padding: 0.5rem 1rem;
         border-radius: 10px;
+        padding: 0.5rem 1rem;
         border: none;
     }
     .stButton>button:hover {
-        background-color: #ff6b6b;
+        background-color: #ff7777;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- Заголовок ---
-st.title("🎰 Мини Лото")
-st.caption("Сделай ставку, выбери числа и проверь свою удачу!")
+# --- Сессия ---
+if "balance" not in st.session_state:
+    st.session_state.balance = 1000  # начальный баланс
+
+if "history" not in st.session_state:
+    st.session_state.history = []
 
 # --- Доступ по коду ---
-with st.expander("🔐 Вход по коду", expanded=True):
-    code_input = st.text_input("Введите код доступа>1234:", type="password")
-    if code_input != ACCESS_CODE:
-        st.warning("🚫 Неверный код. Введите корректный код для продолжения.")
-        st.stop()
-    else:
-        st.success("✅ Доступ разрешён!")
+st.title("🎰 Мини Лото Казино")
 
-# --- Ставка и выбор чисел ---
-st.header("📋 Ввод данных")
+code_input = st.text_input("🔐 Введите код доступа > 1234:", type="password")
+if code_input != "1234":
+    st.warning("Введите верный код доступа.")
+    st.stop()
 
-col1, col2 = st.columns([1, 2])
-with col1:
-    bet = st.number_input("💰 Ставка (только целые):", min_value=1, step=1)
-with col2:
-    user_numbers = st.multiselect("🎯 Выберите 5 уникальных чисел от 1 до 20:",
-                                   options=list(range(1, 21)),
-                                   max_selections=5)
+st.success("Добро пожаловать в казино мини-лото!")
 
-# --- Запуск игры ---
+# --- Баланс ---
+st.markdown(f"### 💳 Баланс: **{st.session_state.balance}** ₸")
+
+# --- Интерфейс игры ---
+st.header("📋 Сделайте ставку и выберите 5 чисел")
+bet = st.number_input("💰 Ваша ставка (₸):", min_value=10, max_value=st.session_state.balance, step=10)
+
+user_numbers = st.multiselect("🎯 Выберите 5 уникальных чисел от 1 до 20:",
+                              options=list(range(1, 21)),
+                              max_selections=5)
+
 if st.button("🎲 Играть!"):
     if len(user_numbers) != 5:
-        st.error("❗ Нужно выбрать ровно 5 уникальных чисел.")
+        st.error("❗ Нужно выбрать ровно 5 чисел.")
+    elif bet > st.session_state.balance:
+        st.error("❗ Недостаточно средств.")
     else:
+        # Игра
         winning_numbers = random.sample(range(1, 21), 5)
         matches = set(user_numbers) & set(winning_numbers)
-        num_matches = len(matches)
+        match_count = len(matches)
 
-        st.subheader("📊 Результаты игры")
-        st.markdown(f"**🎟️ Ваши числа:** {sorted(user_numbers)}")
-        st.markdown(f"**🌀 Выпавшие числа:** {sorted(winning_numbers)}")
-        st.markdown(f"**✅ Совпадения:** {sorted(matches) if matches else 'Нет'}")
+        # Комбинации и коэффициенты
+        combo_map = {
+            0: ("❌ Нет совпадений", 0),
+            1: ("⚪ 1 совпадение", 0),
+            2: ("🟡 2 совпадения", 0),
+            3: ("🟢 3 совпадения (x2)", 2),
+            4: ("🔵 4 совпадения (x5)", 5),
+            5: ("🟣 Джекпот! 5 совпадений (x10)", 10),
+        }
+        combo_name, multiplier = combo_map[match_count]
+        win_amount = bet * multiplier
 
-        multiplier = {3: 2, 4: 5, 5: 10}.get(num_matches, 0)
-        winnings = bet * multiplier
+        # Обновление баланса
+        st.session_state.balance -= bet
+        st.session_state.balance += win_amount
 
-        if winnings > 0:
-            st.success(f"🎉 Поздравляем! Совпадений: {num_matches} — Вы выиграли {winnings}!")
+        # Добавить в историю
+        st.session_state.history.insert(0, {
+            "ставка": bet,
+            "числа": sorted(user_numbers),
+            "выпали": sorted(winning_numbers),
+            "совпадения": match_count,
+            "комбинация": combo_name,
+            "выигрыш": win_amount
+        })
+
+        # Отображение
+        st.subheader("📊 Результаты:")
+        st.write("🎟️ Ваши числа:", sorted(user_numbers))
+        st.write("🎲 Выпавшие числа:", sorted(winning_numbers))
+        st.write("✅ Совпадения:", f"{match_count} — {combo_name}")
+        if win_amount > 0:
+            st.success(f"🎉 Вы выиграли: {win_amount} ₸")
         else:
-            st.error("😢 Увы! Совпадений недостаточно. Попробуй снова!")
+            st.error("😢 Вы проиграли эту ставку.")
+
+        st.markdown(f"### 💳 Новый баланс: **{st.session_state.balance}** ₸")
+
+# --- История ставок ---
+with st.expander("🧾 История ставок (последние 5 игр)"):
+    if not st.session_state.history:
+        st.info("История пуста. Начни играть!")
+    else:
+        for i, entry in enumerate(st.session_state.history[:5]):
+            st.markdown(f"**🎯 Игра #{i+1}:**")
+            st.markdown(f"- Ставка: {entry['ставка']} ₸")
+            st.markdown(f"- Числа: {entry['числа']}")
+            st.markdown(f"- Выпали: {entry['выпали']}")
+            st.markdown(f"- Совпадения: {entry['совпадения']} — {entry['комбинация']}")
+            st.markdown(f"- 💰 Выигрыш: {entry['выигрыш']} ₸")
+            st.markdown("---")
 
 # --- Подвал ---
-st.markdown("---")
-st.caption("© 2025 Мини Лото. Удачи и везения!")
+st.caption("© 2025 Мини Лото Казино | Удачи и выигрышей!")
