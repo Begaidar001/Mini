@@ -6,12 +6,11 @@ import base64
 st.set_page_config(page_title="🎰 Мини Лото Казино", layout="centered")
 
 # --- Минимальный рабочий синий фон (1x1 пиксель) ---
-encoded_bg = (i.webp
-)
+encoded_bg = "i.webp"
 
 
 
-set_background(encoded_bg)
+set_background(encoded_bg= "i.webp")
 
 # --- Простой интерфейс игры ---
 st.title("🎰 Мини Лото Казино")
