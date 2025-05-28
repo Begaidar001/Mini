@@ -1,120 +1,77 @@
 import streamlit as st
 import random
-import time
-from PIL import Image
+import base64
 
 # --- Настройки страницы ---
 st.set_page_config(page_title="🎰 Мини Лото Казино", layout="centered")
 
-# --- Установка фонового изображения (локальный файл) ---
-def set_background(image_file):
-    with open(image_file, "rb") as image:
-        encoded = image.read()
+# --- Вставленный фон (без файла) ---
+encoded_bg = """
+iVBORw0KGgoAAAANSUhEUgAABkAAAAOZCAIAAADJZ3uwAAEAAElEQVR4nOz9abMkyXUlCJ5zr5q7v/diyQ2JJQEQAEECBEgUyCKr2EUpmeqSnhYZKekPM/NfZ+ZLi4yMzHTLdE93dS1dXEGAILbcIyPiLe6mes98uGrm5m+JeJEZGRkJ5hXgpYe5uS1qaqpXzz33XK7sa/i45iAAkvMWGgEQ5dr9G3LPkAKAJCCAaFBuB0DbfxZt/1nan0U2n9ep+bPtdwH7b5+bLa65/43pknT9/gqa8mdTy2hx/dOFxvzR...
+"""  # ← (я укоротил, но вставлю весь по запросу)
+
+# --- Установка фонового изображения ---
+def set_background(encoded_img):
     st.markdown(
         f"""
         <style>
         .stApp {{
-            background-image: url("data:image/png;base64,{encoded.encode('base64').decode()}");
+            background-image: url("data:image/png;base64,{encoded_img}");
             background-size: cover;
             background-position: center;
+            background-repeat: no-repeat;
         }}
         </style>
         """,
         unsafe_allow_html=True
     )
 
-set_background("i.webp")
+set_background(encoded_bg)
 
-# --- Инициализация сессии ---
+# --- Простой интерфейс игры ---
+st.title("🎰 Мини Лото Казино")
+
 if "balance" not in st.session_state:
     st.session_state.balance = 1000
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# --- Заголовок и вход ---
-st.title("🎰 Мини Лото Казино")
-code_input = st.text_input("🔐 Введите код доступа:", type="password")
-if code_input != "1234":
-    st.warning("Введите верный код.")
+code = st.text_input("🔐 Введите код доступа>1234:", type="password")
+if code != "1234":
+    st.warning("❌ Неверный код")
     st.stop()
-else:
-    st.success("Добро пожаловать!")
 
-st.markdown(f"### 💳 Баланс: **{st.session_state.balance}₸**")
+st.success("Добро пожаловать в казино мини-лото!")
+st.markdown(f"💳 **Баланс: {st.session_state.balance} ₸**")
 
-# --- Интерфейс игры ---
-st.header("📋 Ставка и выбор чисел")
-bet = st.number_input("💰 Ставка (₸):", min_value=10, max_value=st.session_state.balance, step=10)
-user_numbers = st.multiselect("🎯 Выберите 5 чисел от 1 до 20:", list(range(1, 21)), max_selections=5)
+st.subheader("📝 Сделайте ставку и выберите 5 чисел")
+bet = st.number_input("💰 Ваша ставка (₸):", min_value=10, max_value=500, step=10)
+numbers = st.multiselect("🔢 Выберите 5 уникальных чисел от 1 до 20:", list(range(1, 21)), max_selections=5)
 
-# --- Кнопка запуска ---
-if st.button("🎲 Крутить барабаны!"):
-    if len(user_numbers) != 5:
-        st.error("Нужно выбрать ровно 5 чисел.")
+if st.button("🎲 Играть!"):
+    if st.session_state.balance < bet:
+        st.error("Недостаточно баланса!")
+    elif len(numbers) != 5:
+        st.warning("Пожалуйста, выберите ровно 5 чисел!")
     else:
-        st.session_state.balance -= bet
-        winning_numbers = []
+        draw = random.sample(range(1, 21), 5)
+        matches = len(set(numbers) & set(draw))
 
-        st.subheader("🎡 Вращение барабанов...")
-        with st.container():
-            bar_cols = st.columns(5)
-            for i in range(5):
-                with bar_cols[i]:
-                    st.markdown("#### 🎰")
-                    num = random.randint(1, 20)
-                    time.sleep(0.3)
-                    winning_numbers.append(num)
-                    st.markdown(f"<h2 style='text-align:center;color:#FFD700'>{num}</h2>", unsafe_allow_html=True)
+        # Выплата по совпадениям
+        win_table = {5: 20, 4: 10, 3: 5}
+        multiplier = win_table.get(matches, 0)
+        win = bet * multiplier
 
-        # Подсчет совпадений
-        matches = set(user_numbers) & set(winning_numbers)
-        match_count = len(matches)
-        combo_map = {
-            0: ("❌ Нет совпадений", 0),
-            1: ("⚪ 1 совпадение", 0),
-            2: ("🟡 2 совпадения", 0),
-            3: ("🟢 3 совпадения (x2)", 2),
-            4: ("🔵 4 совпадения (x5)", 5),
-            5: ("🟣 Джекпот! 5 совпадений (x10)", 10),
-        }
-        combo_name, multiplier = combo_map[match_count]
-        win_amount = bet * multiplier
-        st.session_state.balance += win_amount
+        st.session_state.balance += win - bet
+        st.session_state.history.append((numbers, draw, matches, win - bet))
 
-        st.subheader("📊 Результаты:")
-        st.markdown(f"**Выигрышные числа:** `{sorted(winning_numbers)}`")
-        st.markdown(f"**Ваши числа:** `{sorted(user_numbers)}`")
-        st.markdown(f"**Совпадения:** {match_count} — {combo_name}")
-        if win_amount > 0:
-            st.success(f"🎉 Вы выиграли {win_amount} ₸!")
-        else:
-            st.error("😢 Увы, ничего не выиграно.")
+        st.markdown("## 🎉 Результаты:")
+        st.write(f"🎯 Ваши числа: {numbers}")
+        st.write(f"🎰 Выпавшие числа: {draw}")
+        st.success(f"🔗 Совпадений: {matches} — {'+' if win - bet >= 0 else ''}{win - bet} ₸")
 
-        # История
-        st.session_state.history.insert(0, {
-            "ставка": bet,
-            "ваши": sorted(user_numbers),
-            "выпали": sorted(winning_numbers),
-            "совпадения": match_count,
-            "комбинация": combo_name,
-            "выигрыш": win_amount
-        })
-
-        st.markdown(f"### 💳 Новый баланс: **{st.session_state.balance}₸**")
-
-# --- История ставок ---
-with st.expander("🧾 История ставок"):
-    if not st.session_state.history:
-        st.info("История пока пуста.")
-    else:
-        for h in st.session_state.history[:5]:
-            st.markdown(f"""
-            - 🎯 Ваши: {h['ваши']}
-            - 🎰 Выпали: {h['выпали']}
-            - ✅ Совпадения: {h['совпадения']} ({h['комбинация']})
-            - 💸 Выигрыш: {h['выигрыш']} ₸
-            - 💵 Ставка: {h['ставка']} ₸
-            ---
-            """)
-
-st.caption("© 2025 Мини Лото Казино")
+# История ставок
+if st.session_state.history:
+    st.subheader("📜 История игр")
+    for i, (nums, res, match, change) in enumerate(reversed(st.session_state.history[-5:])):
+        st.markdown(f"**#{len(st.session_state.history)-i}** — 🎯 Числа: {nums}, 🎰 Выпали: {res}, ✅ Совпадения: {match}, 💸 Изменение: {'+' if change>=0 else ''}{change} ₸")
