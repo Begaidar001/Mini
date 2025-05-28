@@ -20,7 +20,7 @@ def set_background(image_file):
         unsafe_allow_html=True
     )
 
-set_background("casino_background.png")  # ← путь к локальному изображению
+set_background("fd11ad4d9dc434b5c0e02f9b950d20dc.jpg")  # ← путь к локальному изображению
 
 # --- Streamlit Лото Казино ---
 st.set_page_config(page_title="🎰 Мини Лото Казино", layout="centered")
@@ -32,7 +32,7 @@ if "balance" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = []
 
-code = st.text_input("🔐 Введите код доступа", type="password")
+code = st.text_input("🔐 Введите код доступа>1234", type="password")
 if code != "1234":
     st.warning("❌ Неверный код")
     st.stop()
