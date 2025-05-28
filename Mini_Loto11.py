@@ -23,7 +23,7 @@ def set_background(image_file):
         unsafe_allow_html=True
     )
 
-set_background("780ed4fc-ec7c-4c71-a0b9-d0d00fb13e28.png")
+set_background("i.webp")
 
 # --- Инициализация сессии ---
 if "balance" not in st.session_state:
