@@ -5,18 +5,12 @@ import base64
 # --- Настройки страницы ---
 st.set_page_config(page_title="🎰 Мини Лото Казино", layout="centered")
 
-# --- Вставленный фон (без файла) ---
-encoded_bg = """
-iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAYAAAA+5YQ6AAAACXBIWXMAAAsTAAALEwEAmpwYAAA
-AGXRFWHRTb2Z0d2FyZQBwYWludC5uZXQgNC4wLjEyMTcw9LrkAAAEdElEQVR4nO3dMQ0AAAzDsP3
-TbQ43hAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADgb7wABEGH/tDAAAAAElFTkSuQmCC
-"""
+# --- Минимальный рабочий синий фон (1x1 пиксель) ---
+encoded_bg = (
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8Xw8AAoMBg"
+    "Aog3f0AAAAASUVORK5CYII="
+)
+
 # --- Установка фонового изображения ---
 def set_background(encoded_img):
     st.markdown(
@@ -27,6 +21,7 @@ def set_background(encoded_img):
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            background-color: #0047ab;
         }}
         </style>
         """,
